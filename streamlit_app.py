@@ -1,164 +1,156 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-
-# 페이지 설정
-st.set_page_config(page_title="Streamlit 요소 예시", layout="wide")
-
-# ===== 텍스트 요소 =====
-st.title("📚 Streamlit 페이지 요소 예시")  # [1] 제목: 페이지의 주요 제목
-
-st.header("텍스트 요소")  # [2] 헤더: 섹션 제목
-
-st.subheader("부제목 예시")  # [3] 부제목: 더 작은 섹션 제목
-
-st.write("이것은 st.write() 함수입니다.")  # [4] 쓰기: 가장 기본적인 텍스트 출력
-
-st.text("일반 텍스트 출력")  # [5] 텍스트: 고정폭 글꼴의 평문 텍스트
-
-st.markdown("**굵은 텍스트**, *기울임*, `코드`, [링크](https://streamlit.io)")  # [6] 마크다운: 마크다운 형식 지원
-
-st.caption("작은 글씨 설명 텍스트")  # [7] 캡션: 주석이나 설명용 작은 글씨
-
-st.code("print('Hello, Streamlit!')", language="python")  # [8] 코드: 구문 강조 코드 블록
-
-# ===== 입력 요소 =====
-st.header("입력 요소")
-
-name = st.text_input("이름을 입력하세요:")  # [9] 텍스트 입력: 사용자로부터 텍스트 입력
-
-age = st.number_input("나이를 입력하세요:", min_value=0, max_value=150, value=25)  # [10] 숫자 입력: 숫자만 입력받음
-
-slider_value = st.slider("슬라이더 값을 선택하세요:", 0, 100, 50)  # [11] 슬라이더: 범위 내에서 값 선택
-
-selected_option = st.selectbox("옵션을 선택하세요:", ["옵션1", "옵션2", "옵션3"])  # [12] 선택 상자: 드롭다운 메뉴
-
-multi_select = st.multiselect("여러 항목을 선택하세요:", ["항목A", "항목B", "항목C", "항목D"])  # [13] 다중 선택: 여러 개 선택 가능
-
-toggle_state = st.toggle("토글 스위치")  # [14] 토글: On/Off 스위치
-
-checkbox = st.checkbox("동의합니다")  # [15] 체크박스: 체크/미체크 옵션
-
-date = st.date_input("날짜를 선택하세요:")  # [16] 날짜 입력: 달력에서 선택
-
-time = st.time_input("시간을 선택하세요:")  # [17] 시간 입력: 시간/분 선택
-
-color = st.color_picker("색상을 선택하세요:")  # [18] 색상 선택: 색상 팔레트
-
-# ===== 데이터 표시 요소 =====
-st.header("데이터 표시 요소")
-
-# 샘플 데이터프레임 생성
-df = pd.DataFrame({
-    "이름": ["Alice", "Bob", "Charlie"],
-    "나이": [25, 30, 35],
-    "점수": [85, 92, 78]
-})
-
-st.dataframe(df)  # [19] 데이터프레임: 상호작용 가능한 표
-
-st.table(df)  # [20] 테이블: 정적 표
-
-# 메트릭 표시
-col1, col2, col3 = st.columns(3)  # [21] 컬럼: 레이아웃을 위한 열 나누기
-with col1:
-    st.metric("총 사용자", "1,234")  # [22] 메트릭: 핵심 지표 표시
-
-with col2:
-    st.metric("일일 활성 사용자", "567", "12%")  # 메트릭 (변화도 포함)
-
-with col3:
-    st.metric("전환율", "89%", "-5%")
-
-# ===== 시각화 요소 =====
-st.header("시각화 요소")
-
-import matplotlib.pyplot as plt
 import altair as alt
 
-# 라인 차트
-chart_data = pd.DataFrame({
-    "월": ["1월", "2월", "3월", "4월", "5월"],
-    "매출": [100, 150, 120, 200, 180]
-})
 
-st.line_chart(chart_data.set_index("월"))  # [23] 라인 차트: 시계열 데이터 표시
+# 간단한 Streamlit 앱: CSV 업로드 후 4가지 그래프(히스토그램, 막대, 산점도, 상자그림)를 그립니다.
+st.set_page_config(page_title="성적 시각화 앱", layout="wide")
 
-st.bar_chart(chart_data.set_index("월"))  # [24] 막대 차트: 카테고리별 비교
+st.title("📊 성적 데이터 시각화")
+st.write("CSV 파일을 업로드하면 히스토그램, 막대그래프, 산점도, 상자그림을 그립니다.")
 
-st.area_chart(chart_data.set_index("월"))  # [25] 영역 차트: 누적 데이터 표시
 
-# Altair 차트
-c = alt.Chart(chart_data).mark_point().encode(
-    x="월",
-    y="매출"
-)
-st.altair_chart(c, use_container_width=True)  # [26] Altair 차트: 고급 시각화
+@st.cache_data
+def load_csv(uploaded_file):
+    return pd.read_csv(uploaded_file)
 
-# Matplotlib 차트
-fig, ax = plt.subplots()
-ax.plot(chart_data["월"], chart_data["매출"], marker="o")
-st.pyplot(fig)  # [27] Pyplot: Matplotlib 차트
 
-# ===== 미디어 요소 =====
-st.header("미디어 요소")
+with st.sidebar:
+    st.header("설정")
+    uploaded_file = st.file_uploader("CSV 파일 업로드", type=["csv"])  # (1)
+    sample_data = st.checkbox("샘플 데이터 사용")
+    chart_type = st.selectbox("그래프 종류 선택", ["히스토그램", "막대그래프", "산점도", "상자그림"])  # (2)
 
-st.image("https://streamlit.io/images/brand/streamlit-mark-color.png", width=200)  # [28] 이미지: 이미지 파일 또는 URL 표시
+# 데이터 로딩
+if uploaded_file is not None:
+    try:
+        df = load_csv(uploaded_file)
+        st.success("CSV 파일이 로드되었습니다.")
+    except Exception as e:
+        st.error(f"파일을 읽는 동안 오류가 발생했습니다: {e}")
+        st.stop()
+elif sample_data:
+    # 샘플 성적 데이터
+    df = pd.DataFrame({
+        "학생": [f"학생{i}" for i in range(1, 21)],
+        "수학": np.random.randint(40, 100, size=20),
+        "영어": np.random.randint(35, 100, size=20),
+        "과학": np.random.randint(30, 100, size=20),
+        "반": np.random.choice(["A반", "B반"], size=20)
+    })
+    st.info("샘플 데이터를 사용합니다.")
+else:
+    st.info("왼쪽 사이드바에서 CSV를 업로드하거나 샘플 데이터를 선택하세요.")
+    st.stop()
 
-st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")  # [29] 오디오: 오디오 플레이어
 
-st.video("https://www.youtube.com/watch?v=CmwXEH95oKE")  # [30] 비디오: 비디오 플레이어
+st.subheader("데이터 미리보기")
+st.dataframe(df.head())
+st.write("기본 통계")
+st.write(df.describe(include='all'))
 
-# ===== 레이아웃 요소 =====
-st.header("레이아웃 요소")
+# 컬럼 분류
+numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+cat_cols = df.select_dtypes(include=[object, "category"]).columns.tolist()
 
-with st.container():  # [31] 컨테이너: 그룹화된 요소 포함
-    st.write("이것은 컨테이너 내의 콘텐츠입니다.")
+st.markdown("---")
 
-with st.expander("더보기 - 클릭하세요"):  # [32] 확장자: 클릭하여 콘텐츠 표시/숨김
-    st.write("숨겨진 콘텐츠를 보여줍니다.")
+st.header(f"선택된 그래프: {chart_type}")
 
-tab1, tab2, tab3 = st.tabs(["탭1", "탭2", "탭3"])  # [33] 탭: 다중 콘텐츠 탭
+def draw_histogram(df):
+    if not numeric_cols:
+        st.warning("숫자형 열이 없습니다.")
+        return
+    col = st.selectbox("히스토그램: 숫자형 열 선택", numeric_cols, key="hist_col")  # (3)
+    bins = st.slider("빈 개수", 5, 100, 20, key="hist_bins")
+    chart = alt.Chart(df).mark_bar().encode(
+        x=alt.X(f"{col}:Q", bin=alt.Bin(maxbins=bins)),
+        y='count()'
+    )
+    st.altair_chart(chart, use_container_width=True)
 
-with tab1:
-    st.write("탭 1 콘텐츠")
 
-with tab2:
-    st.write("탭 2 콘텐츠")
+def draw_bar(df):
+    if not cat_cols and not numeric_cols:
+        st.warning("사용 가능한 열이 없습니다.")
+        return
+    cat = st.selectbox("막대그래프: 범주형 열 선택", cat_cols or df.columns.tolist(), key="bar_cat")  # (3)
+    agg_num = st.selectbox("집계할 숫자형 열 선택 (선택하지 않으면 개수)", ["(count)"] + numeric_cols, key="bar_num")
+    if agg_num == "(count)":
+        chart = alt.Chart(df).mark_bar().encode(
+            x=alt.X(f"{cat}:N", sort='-y'),
+            y='count()'
+        )
+    else:
+        agg = st.selectbox("집계 방식 선택", ["sum", "mean"], key="bar_agg")
+        if agg == "sum":
+            y_enc = alt.Y(f"sum({agg_num}):Q")
+        else:
+            y_enc = alt.Y(f"mean({agg_num}):Q")
+        chart = alt.Chart(df).mark_bar().encode(
+            x=alt.X(f"{cat}:N", sort='-y'),
+            y=y_enc
+        )
+    st.altair_chart(chart, use_container_width=True)
 
-with tab3:
-    st.write("탭 3 콘텐츠")
 
-with st.sidebar:  # [34] 사이드바: 옆쪽 패널에 요소 배치
-    st.header("사이드바 메뉴")
-    sidebar_option = st.radio("선택하세요:", ["옵션 A", "옵션 B", "옵션 C"])  # [35] 라디오: 하나 선택 옵션
+def draw_scatter(df):
+    if len(numeric_cols) < 2:
+        st.warning("산점도를 그리려면 숫자형 열이 최소 2개 필요합니다.")
+        return
+    x_col = st.selectbox("X축 (숫자형)", numeric_cols, key="scatter_x")
+    y_col = st.selectbox("Y축 (숫자형)", [c for c in numeric_cols if c != x_col], key="scatter_y")
+    color = None
+    if cat_cols:
+        color = st.selectbox("색상 그룹 (선택)", ["(없음)"] + cat_cols, key="scatter_color")
+        if color == "(없음)":
+            color = None
+    chart = alt.Chart(df).mark_circle(size=60).encode(
+        x=alt.X(f"{x_col}:Q", title=x_col),
+        y=alt.Y(f"{y_col}:Q", title=y_col),
+    )
+    if color:
+        chart = chart.encode(color=alt.Color(f"{color}:N"))
+    chart = chart.interactive()
+    st.altair_chart(chart, use_container_width=True)
 
-# ===== 상태 메시지 요소 =====
-st.header("상태 메시지")
 
-st.success("성공 메시지입니다! ✅")  # [36] 성공: 긍정적인 메시지
+def draw_box(df):
+    if not numeric_cols:
+        st.warning("숫자형 열이 없습니다.")
+        return
+    val = st.selectbox("상자그림: 숫자형 열 선택", numeric_cols, key="box_val")
+    group = None
+    if cat_cols:
+        group = st.selectbox("그룹 (선택)", ["(없음)"] + cat_cols, key="box_group")
+        if group == "(없음)":
+            group = None
+    if group:
+        chart = alt.Chart(df).mark_boxplot().encode(
+            x=alt.X(f"{group}:N", title=group),
+            y=alt.Y(f"{val}:Q", title=val)
+        )
+    else:
+        # 단일 열의 분포를 상자그림으로 보여주기 위해 상수 x 사용
+        df_tmp = df.copy()
+        df_tmp["_const"] = "all"
+        chart = alt.Chart(df_tmp).mark_boxplot().encode(
+            x=alt.X("_const:N", title=""),
+            y=alt.Y(f"{val}:Q", title=val)
+        )
+    st.altair_chart(chart, use_container_width=True)
 
-st.info("정보 메시지입니다. ℹ️")  # [37] 정보: 정보 제공 메시지
 
-st.warning("경고 메시지입니다. ⚠️")  # [38] 경고: 주의 필요한 메시지
+if chart_type == "히스토그램":
+    draw_histogram(df)
+elif chart_type == "막대그래프":
+    draw_bar(df)
+elif chart_type == "산점도":
+    draw_scatter(df)
+elif chart_type == "상자그림":
+    draw_box(df)
 
-st.error("오류 메시지입니다. ❌")  # [39] 오류: 부정적인 메시지
+st.markdown("---")
+st.write("앱 사용법: CSV 업로드 → 그래프 종류 선택 → 변수 선택 → 그래프 확인")
 
-# ===== 버튼 및 상호작용 =====
-st.header("버튼 및 상호작용")
-
-if st.button("클릭하세요!"):  # [40] 버튼: 클릭 가능한 버튼
-    st.write("버튼이 클릭되었습니다!")
-
-if st.download_button(  # [41] 다운로드 버튼: 파일 다운로드
-    label="CSV 다운로드",
-    data=df.to_csv(index=False),
-    file_name="data.csv",
-    mime="text/csv"
-):
-    st.write("다운로드되었습니다!")
-
-# ===== 분할자 =====
-st.divider()  # [42] 분할자: 시각적 구분선
-
-st.write("페이지 끝입니다. 감사합니다!")
